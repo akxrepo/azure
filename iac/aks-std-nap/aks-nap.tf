@@ -1,12 +1,12 @@
-resource "azurerm_resource_group" "aks_rg" {
-  name     = "aks-resource-group"
+resource "azurerm_resource_group" "aks_nap_rg" {
+  name     = "aks-nap-resource-group"
   location = "East US"
 }
 
-resource "azurerm_network_security_group" "aks" {
-  name                = "aks-subnet-nsg"
-  location            = azurerm_resource_group.aks_rg.location
-  resource_group_name = azurerm_resource_group.aks_rg.name
+resource "azurerm_network_security_group" "aks_nap" {
+  name                = "aks-nap-subnet-nsg"
+  location            = azurerm_resource_group.aks_nap_rg.location
+  resource_group_name = azurerm_resource_group.aks_nap_rg.name
 
   security_rule {
     name                       = "allow-http-from-internet"
@@ -45,33 +45,37 @@ resource "azurerm_network_security_group" "aks" {
   }
 }
 
-resource "azurerm_kubernetes_cluster" "aks" {
+resource "azurerm_kubernetes_cluster" "aks_nap" {
   name                = var.cluster_name
-  location            = azurerm_resource_group.aks_rg.location
-  resource_group_name = azurerm_resource_group.aks_rg.name
+  location            = azurerm_resource_group.aks_nap_rg.location
+  resource_group_name = azurerm_resource_group.aks_nap_rg.name
   dns_prefix          = var.dns_prefix
   sku_tier            = "Standard"
 
-# Auto-scaling configuration for the default node pool
   default_node_pool {
-    name                 = "system"
-    node_count           = var.node_count
-    vm_size              = var.node_vm_size
-    vnet_subnet_id       = azurerm_subnet.app.id
-    type                 = "VirtualMachineScaleSets"
-    auto_scaling_enabled = true
-    min_count            = var.min_count
-    max_count            = var.max_count
+    name           = "system"
+    node_count     = var.node_count
+    vm_size        = var.node_vm_size
+    vnet_subnet_id = azurerm_subnet.app.id
+    type           = "VirtualMachineScaleSets"
   }
 
   identity {
     type = "SystemAssigned"
   }
 
+  # NAP-specific configuration
+  node_provisioning_profile {
+    mode               = "Auto"
+    default_node_pools = "Auto"
+  }
+
   network_profile {
-    network_plugin    = "azure"
-    load_balancer_sku = "standard"
-    outbound_type     = "loadBalancer"
+    network_plugin      = "azure"
+    network_plugin_mode = "overlay"
+    network_data_plane  = "cilium"
+    load_balancer_sku   = "standard"
+    outbound_type       = "loadBalancer"
   }
 
   depends_on = [
@@ -80,10 +84,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
   ]
 }
 
-output "aks_cluster_name" {
-  value = azurerm_kubernetes_cluster.aks.name
+output "aks_nap_cluster_name" {
+  value = azurerm_kubernetes_cluster.aks_nap.name
 }
 
-output "aks_resource_group_name" {
-  value = azurerm_resource_group.aks_rg.name
+output "aks_nap_resource_group_name" {
+  value = azurerm_resource_group.aks_nap_rg.name
 }
