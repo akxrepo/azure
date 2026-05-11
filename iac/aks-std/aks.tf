@@ -53,11 +53,14 @@ resource "azurerm_kubernetes_cluster" "aks" {
   sku_tier            = "Standard"
 
   default_node_pool {
-    name           = "system"
-    node_count     = var.node_count
-    vm_size        = var.node_vm_size
-    vnet_subnet_id = azurerm_subnet.app.id
-    type           = "VirtualMachineScaleSets"
+    name                 = "system"
+    node_count           = var.node_count
+    vm_size              = var.node_vm_size
+    vnet_subnet_id       = azurerm_subnet.app.id
+    type                 = "VirtualMachineScaleSets"
+    auto_scaling_enabled = true
+    min_count            = var.min_count
+    max_count            = var.max_count
   }
 
   identity {
