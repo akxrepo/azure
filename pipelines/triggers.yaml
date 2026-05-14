@@ -1,0 +1,41 @@
+name: "Trigger Piepeline with Branch and Path Filters"
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    exclude:
+      - README.md
+
+pr:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: manualTrigger
+    displayName: 'Run pipeline manually?'
+    type: boolean
+    default: false
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+
+  # ─── STAGE 1: Build ───────────────────────────────────────────────
+  - stage: Test
+    displayName: 'Test Stage'
+    jobs:
+      - job: TestJob
+        displayName: 'Test Job'
+        steps:
+
+          - script: echo "Triggered manually = ${{ parameters.manualTrigger }}"
+            displayName: 'Manual Trigger'
+          - script: echo "This pipeline is triggered by branch and path filters."
+            displayName: 'Branch and Path Filters'
+
+
